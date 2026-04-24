@@ -8,6 +8,7 @@ from alphaagent_qdatasdk.app import (
 )
 from alphaagent_qdatasdk.core import (
     AlphaAgentHypothesis,
+    AlphaAgentHypothesisGen,
     ExperimentResult,
     ExperimentStatus,
     FailedTaskRecord,
@@ -19,11 +20,12 @@ from alphaagent_qdatasdk.core import (
     RoundRecord,
     Trace,
 )
-from alphaagent_qdatasdk.workflow import AlphaAgentLoop
+from alphaagent_qdatasdk.workflow import AlphaAgentLoop, LoopRoundOutput
 from alphaagent_qdatasdk.llm import LLMClient, LLMConfig
 
 __all__ = [
     "AlphaAgentHypothesis",
+    "AlphaAgentHypothesisGen",
     "AlphaAgentLoop",
     "AlphaAgentLoopConfig",
     "DEFAULT_LOOP_CONFIG",
@@ -37,6 +39,7 @@ __all__ = [
     "HypothesisFeedback",
     "LLMClient",
     "LLMConfig",
+    "LoopRoundOutput",
     "RoundRecord",
     "Trace",
     "build_loop_config",

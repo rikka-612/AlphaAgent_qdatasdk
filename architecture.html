@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlphaAgent_qdatasdk — Code Architecture</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --app: #79c0ff;
+      --core: #7ee787;
+      --llm: #d2a8ff;
+      --prompts: #ffa657;
+      --qdatasdk: #ff7b72;
+      --workflow: #56d4dd;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+    }
+    header {
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(90deg, rgba(88,166,255,.08), transparent);
+    }
+    header h1 { margin: 0; font-size: 26px; letter-spacing: .3px; }
+    header p { margin: 6px 0 0; color: var(--muted); }
+
+    .wrap { max-width: 1400px; margin: 0 auto; padding: 24px 32px 60px; }
+
+    .section-title {
+      font-size: 18px; font-weight: 600;
+      margin: 32px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .dot.app { background: var(--app); }
+    .dot.core { background: var(--core); }
+    .dot.llm { background: var(--llm); }
+    .dot.prompts { background: var(--prompts); }
+    .dot.qdatasdk { background: var(--qdatasdk); }
+    .dot.workflow { background: var(--workflow); }
+
+    .mermaid {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: #484f58;
+      box-shadow: 0 8px 24px rgba(0,0,0,.35);
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .card-path {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 13px;
+      color: var(--accent);
+      word-break: break-all;
+    }
+    .badge {
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px;
+      padding: 3px 8px; border-radius: 999px;
+      background: rgba(88,166,255,.12); color: var(--accent);
+      border: 1px solid rgba(88,166,255,.25);
+      white-space: nowrap;
+    }
+    .badge.app { background: rgba(121,192,255,.12); color: var(--app); border-color: rgba(121,192,255,.25); }
+    .badge.core { background: rgba(126,231,135,.12); color: var(--core); border-color: rgba(126,231,135,.25); }
+    .badge.llm { background: rgba(210,168,255,.12); color: var(--llm); border-color: rgba(210,168,255,.25); }
+    .badge.prompts { background: rgba(255,166,87,.12); color: var(--prompts); border-color: rgba(255,166,87,.25); }
+    .badge.qdatasdk { background: rgba(255,123,114,.12); color: var(--qdatasdk); border-color: rgba(255,123,114,.25); }
+    .badge.workflow { background: rgba(86,212,221,.12); color: var(--workflow); border-color: rgba(86,212,221,.25); }
+
+    .card h4 { margin: 12px 0 6px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+    .list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px; padding: 4px 10px; border-radius: 6px;
+      background: rgba(201,209,217,.08); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .chip.cls { border-left: 3px solid var(--core); }
+    .chip.func { border-left: 3px solid var(--accent); }
+    .chip.prop { border-left: 3px solid var(--llm); }
+
+    .deps { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 12px; color: var(--muted); }
+    .deps strong { color: var(--text); }
+
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 16px;
+      margin: 12px 0 24px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AlphaAgent_qdatasdk — Code Architecture</h1>
+    <p>Detailed module map, class/function inventory, and internal dependency graph.</p>
+  </header>
+
+  <div class="wrap">
+    <div class="legend">
+      <div class="legend-item"><span class="dot app"></span> app (CLI / Config)</div>
+      <div class="legend-item"><span class="dot core"></span> core (Data Contracts)</div>
+      <div class="legend-item"><span class="dot llm"></span> llm (Provider Client)</div>
+      <div class="legend-item"><span class="dot prompts"></span> prompts (YAML + Builders)</div>
+      <div class="legend-item"><span class="dot qdatasdk"></span> qdatasdk (SDK Adapter)</div>
+      <div class="legend-item"><span class="dot workflow"></span> workflow (Stages & Loop)</div>
+    </div>
+
+    <div class="section-title">Dependency Diagram</div>
+    <div class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#161b22', 'primaryTextColor': '#c9d1d9', 'primaryBorderColor': '#30363d', 'lineColor': '#8b949e', 'secondaryColor': '#21262d', 'tertiaryColor': '#0d1117'}}}%%
+flowchart TD
+    subgraph APP["📁 app"]
+        CLI["cli.py<br/>build_parser()<br/>run_command()<br/>main()"]
+        CONF["conf.py<br/>AlphaAgentLoopConfig<br/>build_loop_config()"]
+        HC["health_check.py<br/>run_health_check()"]
+    end
+
+    subgraph CORE["📁 core"]
+        ENUMS["enums.py<br/>FeedbackDecision<br/>ExperimentStatus"]
+        TYPES["types.py"]
+        HYP["hypothesis.py<br/>AlphaAgentHypothesis<br/>AlphaAgentHypothesisGen"]
+        FACTOR["factor.py<br/>FactorTask<br/>FactorExperiment"]
+        RESULT["result.py<br/>ExperimentResult"]
+        FB["feedback.py<br/>FactorQualityScore<br/>HypothesisFeedback"]
+        TRACE["trace.py<br/>FailedTaskRecord<br/>RoundRecord<br/>Trace"]
+        CONTRACTS["contracts.py<br/>(re-exports)"]
+    end
+
+    subgraph LLM["📁 llm"]
+        LCFG["config.py<br/>LLMConfig<br/>build_llm_config()"]
+        LCLI["client.py<br/>LLMClient<br/>chat_completion()<br/>chat_json()"]
+        LENV["env.py<br/>load_local_env()"]
+    end
+
+    subgraph PROMPTS["📁 prompts"]
+        PLOAD["loader.py<br/>load_prompt_yaml()"]
+        PHYP["hypothesis.py<br/>build_hypothesis_user_prompt()"]
+        PEXP["experiment.py<br/>build_experiment_user_prompt()"]
+        PFDB["feedback.py<br/>build_feedback_user_prompt()"]
+        PHC["health_check.py<br/>HEALTH_CHECK_*"]
+    end
+
+    subgraph QDATA["📁 qdatasdk"]
+        QHYP["hypothesis.py<br/>QDataSDKHypothesisGen<br/>hypothesis_generation()"]
+    end
+
+    subgraph WF["📁 workflow"]
+        WLOOP["alphaagent_loop.py<br/>AlphaAgentLoop<br/>run()<br/>run_round()"]
+        WFACT["factory.py<br/>AlphaAgentWorkflowComponents<br/>build_workflow_components()"]
+        WEXP["experiment_stage.py<br/>FactorExperimentStage<br/>generate()"]
+        WCODE["coder_stage.py<br/>FactorCoderStage<br/>materialize()"]
+        WRUN["runner_stage.py<br/>FactorRunnerStage<br/>run()"]
+        WFDB["feedback_stage.py<br/>FactorFeedbackStage<br/>generate()"]
+        WTRACE["trace_stage.py<br/>TraceStage<br/>update()"]
+        WCOMMON["common.py<br/>trace_summary()<br/>parse_feedback_decision()<br/>build_quality_score()"]
+        WOUT["round_output.py<br/>LoopRoundOutput"]
+    end
+
+    CLI --> CONF
+    CLI --> LCLI
+    CLI --> WLOOP
+
+    CONF --> TYPES
+    CONF --> LCFG
+
+    HC --> LCLI
+    HC --> PHC
+
+    CONTRACTS --> ENUMS
+    CONTRACTS --> HYP
+    CONTRACTS --> FACTOR
+    CONTRACTS --> FB
+    CONTRACTS --> RESULT
+    CONTRACTS --> TRACE
+    CONTRACTS --> TYPES
+
+    FACTOR --> HYP
+    FACTOR --> TYPES
+
+    FB --> ENUMS
+    FB --> TYPES
+
+    HYP -.TYPE_CHECKING.-> TRACE
+
+    RESULT --> ENUMS
+    RESULT --> TYPES
+
+    TRACE --> FACTOR
+    TRACE --> FB
+    TRACE --> HYP
+    TRACE --> RESULT
+
+    LCLI --> LCFG
+
+    PHYP --> PLOAD
+    PEXP --> PLOAD
+    PFDB --> PLOAD
+    PHC --> PLOAD
+
+    QHYP --> CONF
+    QHYP --> HYP
+    QHYP --> LCLI
+    QHYP --> PHYP
+
+    WLOOP --> CONF
+    WLOOP --> HYP
+    WLOOP --> WFACT
+    WLOOP --> WOUT
+
+    WFACT --> CONF
+    WFACT --> LCLI
+    WFACT --> QHYP
+    WFACT --> WCODE
+    WFACT --> WEXP
+    WFACT --> WFDB
+    WFACT --> WRUN
+    WFACT --> WTRACE
+
+    WEXP --> CONF
+    WEXP --> FACTOR
+    WEXP --> LCLI
+    WEXP --> PEXP
+    WEXP --> WCOMMON
+
+    WCODE --> CONF
+    WCODE --> FACTOR
+
+    WRUN --> CONF
+    WRUN --> RESULT
+
+    WFDB --> CONF
+    WFDB --> FB
+    WFDB --> LCLI
+    WFDB --> PFDB
+    WFDB --> WCOMMON
+
+    WTRACE --> TRACE
+    WCOMMON --> ENUMS
+    WCOMMON --> FB
+    WOUT --> RESULT
+    </div>
+
+    <div class="section-title"><span class="dot core"></span> Core Data Contracts</div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">core/enums.py</div>
+          <div class="badge core">core</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">FeedbackDecision</div>
+          <div class="chip cls">ExperimentStatus</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">core/types.py</div>
+          <div class="badge core">core</div>
+        </div>
+        <div style="color:var(--muted);font-size:13px;">Shared type aliases / placeholders.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">core/hypothesis.py</div>
+          <div class="badge core">core</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">AlphaAgentHypothesis</div>
+          <div class="chip cls">AlphaAgentHypothesisGen</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">hypothesis_generation()</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">core/factor.py</div>
+          <div class="badge core">core</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">FactorTask</div>
+          <div class="chip cls">FactorExperiment</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">core/result.py</div>
+          <div class="badge core">core</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">ExperimentResult</div>
+        </div>
+        <h4>Properties</h4>
+        <div class="list">
+          <div class="chip prop">succeeded</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">core/feedback.py</div>
+          <div class="badge core">core</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">FactorQualityScore</div>
+          <div class="chip cls">HypothesisFeedback</div>
+        </div>
+        <h4>Properties</h4>
+        <div class="list">
+          <div class="chip prop">should_continue</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">core/trace.py</div>
+          <div class="badge core">core</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">FailedTaskRecord</div>
+          <div class="chip cls">RoundRecord</div>
+          <div class="chip cls">Trace</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">append_round()</div>
+          <div class="chip func">latest_round()</div>
+          <div class="chip func">set_current_sota()</div>
+          <div class="chip func">record_failed_task()</div>
+          <div class="chip func">record_failed_tasks()</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">core/contracts.py</div>
+          <div class="badge core">core</div>
+        </div>
+        <div style="color:var(--muted);font-size:13px;">Compatibility re-export layer. Re-exports all core classes for convenience.</div>
+        <div class="deps"><strong>Imports from:</strong> enums, factor, feedback, hypothesis, result, trace, types</div>
+      </div>
+    </div>
+
+    <div class="section-title"><span class="dot llm"></span> LLM Layer</div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">llm/config.py</div>
+          <div class="badge llm">llm</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">LLMConfig</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">is_kimi_code_chat()</div>
+          <div class="chip func">normalize_chat_model()</div>
+          <div class="chip func">resolve_chat_api_base()</div>
+          <div class="chip func">get_provider_headers()</div>
+          <div class="chip func">build_llm_config()</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">llm/client.py</div>
+          <div class="badge llm">llm</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">LLMClient</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">chat_completion()</div>
+          <div class="chip func">chat_text()</div>
+          <div class="chip func">chat_json()</div>
+          <div class="chip func">_parse_json_object()</div>
+          <div class="chip func">_strip_code_fences()</div>
+          <div class="chip func">_extract_json_fragment()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> llm.config</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">llm/env.py</div>
+          <div class="badge llm">llm</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">_strip_quotes()</div>
+          <div class="chip func">load_local_env()</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title"><span class="dot prompts"></span> Prompts</div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">prompts/loader.py</div>
+          <div class="badge prompts">prompts</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">load_prompt_yaml()</div>
+        </div>
+        <div style="color:var(--muted);font-size:12px;margin-top:8px;">Custom lightweight YAML parser for repo-local prompt files (zero external deps).</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">prompts/hypothesis.py</div>
+          <div class="badge prompts">prompts</div>
+        </div>
+        <h4>Constants</h4>
+        <div class="list"><div class="chip">HYPOTHESIS_SYSTEM_PROMPT</div></div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">build_hypothesis_user_prompt()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> prompts.loader</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">prompts/experiment.py</div>
+          <div class="badge prompts">prompts</div>
+        </div>
+        <h4>Constants</h4>
+        <div class="list"><div class="chip">EXPERIMENT_SYSTEM_PROMPT</div></div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">build_experiment_user_prompt()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> prompts.loader</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">prompts/feedback.py</div>
+          <div class="badge prompts">prompts</div>
+        </div>
+        <h4>Constants</h4>
+        <div class="list"><div class="chip">FEEDBACK_SYSTEM_PROMPT</div></div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">build_feedback_user_prompt()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> prompts.loader</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">prompts/health_check.py</div>
+          <div class="badge prompts">prompts</div>
+        </div>
+        <h4>Constants</h4>
+        <div class="list">
+          <div class="chip">HEALTH_CHECK_SYSTEM_PROMPT</div>
+          <div class="chip">HEALTH_CHECK_USER_PROMPT</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> prompts.loader</div>
+      </div>
+    </div>
+
+    <div class="section-title"><span class="dot qdatasdk"></span> QDataSDK Adapter</div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">qdatasdk/hypothesis.py</div>
+          <div class="badge qdatasdk">qdatasdk</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">QDataSDKHypothesisGen</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">hypothesis_generation()</div>
+          <div class="chip func">_fallback_hypothesis_from_text()</div>
+          <div class="chip func">_trace_summary()</div>
+          <div class="chip func">_has_required_strings()</div>
+          <div class="chip func">_summarize_text()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> app.conf, core, llm, prompts</div>
+      </div>
+    </div>
+
+    <div class="section-title"><span class="dot workflow"></span> Workflow Stages</div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">workflow/alphaagent_loop.py</div>
+          <div class="badge workflow">workflow</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">AlphaAgentLoop</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">run()</div>
+          <div class="chip func">run_round()</div>
+          <div class="chip func">hypothesis_generation()</div>
+          <div class="chip func">experiment_generation()</div>
+          <div class="chip func">coder()</div>
+          <div class="chip func">runner()</div>
+          <div class="chip func">feedback()</div>
+          <div class="chip func">trace_update()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> app.conf, core, workflow.factory, workflow.round_output</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">workflow/factory.py</div>
+          <div class="badge workflow">workflow</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">AlphaAgentWorkflowComponents</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">build_workflow_components()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> app.conf, core, llm, qdatasdk, workflow.coder_stage, experiment_stage, feedback_stage, runner_stage, trace_stage</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">workflow/experiment_stage.py</div>
+          <div class="badge workflow">workflow</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">FactorExperimentStage</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">generate()</div>
+          <div class="chip func">_fallback_from_text()</div>
+          <div class="chip func">_build_experiment()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> app.conf, core, llm, prompts, workflow.common</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">workflow/coder_stage.py</div>
+          <div class="badge workflow">workflow</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">FactorCoderStage</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">materialize()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> app.conf, core</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">workflow/runner_stage.py</div>
+          <div class="badge workflow">workflow</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">FactorRunnerStage</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">run()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> app.conf, core</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">workflow/feedback_stage.py</div>
+          <div class="badge workflow">workflow</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">FactorFeedbackStage</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">generate()</div>
+          <div class="chip func">_fallback_from_text()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> app.conf, core, llm, prompts, workflow.common</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">workflow/trace_stage.py</div>
+          <div class="badge workflow">workflow</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">TraceStage</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">update()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> core</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">workflow/common.py</div>
+          <div class="badge workflow">workflow</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">trace_summary()</div>
+          <div class="chip func">as_string_list()</div>
+          <div class="chip func">optional_string()</div>
+          <div class="chip func">parse_feedback_decision()</div>
+          <div class="chip func">is_feedback_decision()</div>
+          <div class="chip func">build_quality_score()</div>
+          <div class="chip func">summarize_text()</div>
+          <div class="chip func">has_required_strings()</div>
+          <div class="chip func">payload_to_text()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> core</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">workflow/round_output.py</div>
+          <div class="badge workflow">workflow</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">LoopRoundOutput</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> core</div>
+      </div>
+    </div>
+
+    <div class="section-title"><span class="dot app"></span> App Entrypoints</div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">app/cli.py</div>
+          <div class="badge app">app</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">build_parser()</div>
+          <div class="chip func">run_command()</div>
+          <div class="chip func">main()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> app.conf, llm, workflow</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">app/conf.py</div>
+          <div class="badge app">app</div>
+        </div>
+        <h4>Classes</h4>
+        <div class="list">
+          <div class="chip cls">AlphaAgentLoopConfig</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">build_loop_config()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> core.types, llm</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-path">app/health_check.py</div>
+          <div class="badge app">app</div>
+        </div>
+        <h4>Functions</h4>
+        <div class="list">
+          <div class="chip func">run_health_check()</div>
+        </div>
+        <div class="deps"><strong>Imports from:</strong> llm, prompts</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      flowchart: {
+        curve: 'basis',
+        padding: 16,
+        nodeSpacing: 40,
+        rankSpacing: 60,
+        useMaxWidth: true,
+        htmlLabels: true
+      }
+    });
+  </script>
+</body>
+</html>

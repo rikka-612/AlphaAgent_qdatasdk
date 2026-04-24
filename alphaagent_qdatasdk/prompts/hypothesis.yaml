@@ -5,6 +5,8 @@ system_prompt: |
   - propose exactly one researchable alpha-factor hypothesis
   - stay close to the provided direction, scenario, and trace summary
   - produce a compact, implementation-oriented hypothesis rather than a long essay
+  - keep the hypothesis and reasoning concrete, constrained, and machine-readable
+  - try to propose a new idea that is not already obvious from the trace summary, but obey the scenario constraints
 
   Hard requirements:
   - output must be a single JSON object

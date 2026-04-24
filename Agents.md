@@ -31,8 +31,9 @@ clear enough that we can later implement them one by one.
   logic.
 - `alphaagent_qdatasdk/prompts/` now stores prompt content in repo-local YAML
   files, with thin Python builders only for dynamic field interpolation.
-- `alphaagent_qdatasdk/workflow/alphaagent_loop.py` contains the current
-  deterministic mock loop.
+- `alphaagent_qdatasdk/workflow/` now uses a composed stage structure.
+- `alphaagent_qdatasdk/workflow/alphaagent_loop.py` keeps round orchestration;
+  non-essential stage logic has been split into dedicated modules.
 
 Current runnable check:
 - `python -B -m alphaagent_qdatasdk.app.cli run --rounds 2`
@@ -401,8 +402,18 @@ Role:
 - `alphaagent_qdatasdk/prompts/*.yaml`: system prompts and user prompt
   templates
 - `alphaagent_qdatasdk/prompts/loader.py`: lightweight YAML prompt loader
-- `alphaagent_qdatasdk/workflow/alphaagent_loop.py`: six-stage `AlphaAgentLoop`
-  with optional real LLM text stages
+- `alphaagent_qdatasdk/workflow/common.py`: shared parsing and trace-summary
+  helpers for workflow stages
+- `alphaagent_qdatasdk/workflow/experiment_stage.py`: factor experiment
+  generation stage
+- `alphaagent_qdatasdk/workflow/coder_stage.py`: task workspace materialization
+- `alphaagent_qdatasdk/workflow/runner_stage.py`: mock runner result
+  generation
+- `alphaagent_qdatasdk/workflow/feedback_stage.py`: structured feedback stage
+- `alphaagent_qdatasdk/workflow/trace_stage.py`: trace update stage
+- `alphaagent_qdatasdk/workflow/round_output.py`: `LoopRoundOutput`
+- `alphaagent_qdatasdk/workflow/alphaagent_loop.py`: composed six-stage
+  `AlphaAgentLoop` orchestrator
 
 ## First Implementation Order
 
