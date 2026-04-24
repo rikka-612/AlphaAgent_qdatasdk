@@ -27,17 +27,24 @@ clear enough that we can later implement them one by one.
 - Core contracts have been split by category under `alphaagent_qdatasdk/core/`.
 - `alphaagent_qdatasdk/app/conf.py` defines the current loop config.
 - `alphaagent_qdatasdk/app/cli.py` provides a runnable CLI entrypoint.
+- `alphaagent_qdatasdk/llm/` now contains provider-aware LLM config and client
+  logic.
+- `alphaagent_qdatasdk/prompts/` now stores prompt content in repo-local YAML
+  files, with thin Python builders only for dynamic field interpolation.
 - `alphaagent_qdatasdk/workflow/alphaagent_loop.py` contains the current
   deterministic mock loop.
 
 Current runnable check:
 - `python -B -m alphaagent_qdatasdk.app.cli run --rounds 2`
+- `python -B -m alphaagent_qdatasdk.app.cli health-check`
 
 Important boundary:
 - The loop is runnable now, but hypothesis generation, experiment generation,
-  coder, runner, and feedback are still deterministic mock implementations.
-- Real LLM, qdatasdk, code generation, and backtest integrations should replace
-  one stage at a time.
+  coder, and runner are not fully integrated yet.
+- Real LLM is now wired for hypothesis generation, experiment generation, and
+  feedback when `dry_run=False`.
+- qdatasdk querying, code generation, and backtest execution still need to
+  replace the current mock coder/runner one stage at a time.
 
 ## Core Loop
 
@@ -370,6 +377,8 @@ Role:
 - `trace` should be append-only history, not an overwritten scratchpad.
 - `contracts.py` should remain a compatibility export layer; class definitions
   should live in category-specific files.
+- health check and formal LLM usage must share the same compatibility logic:
+  final `api_base`, final `model`, and final request headers.
 
 ## Current Implementation Map
 
@@ -382,10 +391,18 @@ Role:
 - `alphaagent_qdatasdk/core/trace.py`: `FailedTaskRecord`, `RoundRecord`,
   `Trace`
 - `alphaagent_qdatasdk/core/contracts.py`: compatibility exports
+- `alphaagent_qdatasdk/llm/config.py`: provider-aware LLM config and Kimi
+  compatibility rules
+- `alphaagent_qdatasdk/llm/client.py`: chat completion client
+- `alphaagent_qdatasdk/llm/env.py`: local `.env` loader
 - `alphaagent_qdatasdk/app/conf.py`: `AlphaAgentLoopConfig`, `build_loop_config`
-- `alphaagent_qdatasdk/app/cli.py`: CLI entrypoint
-- `alphaagent_qdatasdk/workflow/alphaagent_loop.py`: mock six-stage
-  `AlphaAgentLoop`
+- `alphaagent_qdatasdk/app/health_check.py`: minimal LLM connectivity check
+- `alphaagent_qdatasdk/app/cli.py`: CLI entrypoint and health check command
+- `alphaagent_qdatasdk/prompts/*.yaml`: system prompts and user prompt
+  templates
+- `alphaagent_qdatasdk/prompts/loader.py`: lightweight YAML prompt loader
+- `alphaagent_qdatasdk/workflow/alphaagent_loop.py`: six-stage `AlphaAgentLoop`
+  with optional real LLM text stages
 
 ## First Implementation Order
 
@@ -393,7 +410,8 @@ Role:
 2. Done: split core contracts by category.
 3. Done: build a mock loop with fake outputs.
 4. Done: add CLI and config entrypoints.
-5. Next: build the qdatasdk function library abstraction.
-6. Next: replace mock experiment generation with regulated factor-task output.
-7. Later: build the real coder and runner.
-8. Later: plug in real feedback and trace iteration.
+5. Done: add provider-aware LLM compatibility layer and health check.
+6. Next: build the qdatasdk function library abstraction.
+7. Next: replace mock coder with real task materialization.
+8. Next: replace mock runner with real qdatasdk/backtest execution.
+9. Later: refine feedback scoring and trace iteration.

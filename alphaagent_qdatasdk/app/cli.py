@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 
+from alphaagent_qdatasdk.app import run_health_check
 from alphaagent_qdatasdk.app.conf import build_loop_config
+from alphaagent_qdatasdk.llm import load_local_env
 from alphaagent_qdatasdk.workflow import AlphaAgentLoop
 
 
@@ -27,8 +29,9 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument(
         "--real-run",
         action="store_true",
-        help="Mark config as non-dry-run. Real integrations are not implemented yet.",
+        help="Use the configured LLM for text stages instead of deterministic dry-run output.",
     )
+    subparsers.add_parser("health-check", help="Run the minimal LLM connectivity check.")
     return parser
 
 
@@ -55,11 +58,18 @@ def run_command(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    load_local_env()
     parser = build_parser()
     args = parser.parse_args(argv)
 
     if args.command == "run":
         return run_command(args)
+    if args.command == "health-check":
+        result = run_health_check()
+        print(
+            "api_base={api_base} model={model} user_agent={user_agent} reply={reply}".format(**result)
+        )
+        return 0
 
     parser.error(f"Unknown command: {args.command}")
     return 2

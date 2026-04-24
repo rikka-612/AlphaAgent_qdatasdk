@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from alphaagent_qdatasdk.core.types import JsonDict
+from alphaagent_qdatasdk.llm import LLMConfig, build_llm_config, load_local_env
 
 
 @dataclass(slots=True)
@@ -23,6 +24,7 @@ class AlphaAgentLoopConfig:
     max_rounds: int = 1
     workspace: Path = Path("workspace")
     dry_run: bool = True
+    llm: LLMConfig | None = None
 
 
 DEFAULT_LOOP_CONFIG = AlphaAgentLoopConfig()
@@ -34,9 +36,11 @@ def build_loop_config(
     max_rounds: int | None = None,
     workspace: str | Path | None = None,
     dry_run: bool | None = None,
+    llm: LLMConfig | None = None,
 ) -> AlphaAgentLoopConfig:
     """Build a loop config from CLI-friendly optional values."""
 
+    load_local_env()
     config = AlphaAgentLoopConfig()
     if active_direction is not None:
         config.active_direction = active_direction
@@ -46,4 +50,8 @@ def build_loop_config(
         config.workspace = Path(workspace)
     if dry_run is not None:
         config.dry_run = dry_run
+    if llm is not None:
+        config.llm = llm
+    elif not config.dry_run:
+        config.llm = build_llm_config(required=True)
     return config

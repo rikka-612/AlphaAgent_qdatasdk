@@ -1,0 +1,12 @@
+system_prompt: |
+  You are a coding assistant.
+
+  Hard requirements:
+  - reply with exactly one token: OK
+  - do not output punctuation
+  - do not output markdown
+  - do not output explanations
+  - do not output chain-of-thought
+
+user_prompt: |
+  Return exactly OK.

@@ -4,6 +4,7 @@ from alphaagent_qdatasdk.app import (
     DEFAULT_LOOP_CONFIG,
     AlphaAgentLoopConfig,
     build_loop_config,
+    run_health_check,
 )
 from alphaagent_qdatasdk.core import (
     AlphaAgentHypothesis,
@@ -19,6 +20,7 @@ from alphaagent_qdatasdk.core import (
     Trace,
 )
 from alphaagent_qdatasdk.workflow import AlphaAgentLoop
+from alphaagent_qdatasdk.llm import LLMClient, LLMConfig
 
 __all__ = [
     "AlphaAgentHypothesis",
@@ -33,7 +35,10 @@ __all__ = [
     "FactorQualityScore",
     "FeedbackDecision",
     "HypothesisFeedback",
+    "LLMClient",
+    "LLMConfig",
     "RoundRecord",
     "Trace",
     "build_loop_config",
+    "run_health_check",
 ]
